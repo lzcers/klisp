@@ -128,7 +128,6 @@ const LET = tokens => {
     bindspecs: r[0].filter(i => i.type == 'bindspec'),
     body: r[0].find(i => i.type == 'body')
   }}, r[1]]
-  throw 'failed to parse let'
   return r
 }
 // <FORMALS> -> (<VAR>*)

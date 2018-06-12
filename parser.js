@@ -20,11 +20,7 @@ function tokenizer(str) {
 }
 
 function parser(tokens) {
-  try {
-    const ast = program(tokens)
-  } catch (err) {
-    console.log(err)
-  }
+    return program(tokens)
 }
 
 module.exports = { tokenizer, parser }
