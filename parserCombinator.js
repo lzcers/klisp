@@ -1,9 +1,8 @@
 let errManager = {
-  resttokens: -1,
+  restTokens: -1,
   errorInfo: ''
 }
 // (let ((y 2)) ((lambda (x) (+ x y)) 1))
-const keyword = new Set(['def', 'if', 'lambda'])
 // 首先定义 Parser, 它是一个接受 tokens 返回 Result 的函数
 // Parser := Tokens => Result | null
 // tokens 就定义为数组好了 
@@ -11,17 +10,24 @@ const keyword = new Set(['def', 'if', 'lambda'])
 // Result 是一个数组，第一个元素是解析结果数组，第二元素是剩下的tokens, 如果为 null 则为解析失败
 // 然后我们来定义第一个 parser
 // 这个 parser 对任何一个 token 都解析成功，并吃掉它，相当于 G -> ε
-const Successed = tokens => [{type: 'any', value: tokens[0]}, tokens.slice(1)]
+const Successed = tokens => [{type: 'any', value: tokens[0].token}, tokens.slice(1)]
 
 // 一个高阶函数，用于创建标识符解析器， 比如说 Ｇ　-> s 解析 s 终结符
-const ID = id => tokens => {
-  const r = tokens[0] === id ? [{type: 'identifier', value: tokens[0]}, tokens.slice(1)] : null
+const ID = (id, regex = false) => tokens => {
+  let r = null
+  if (tokens[0] && regex) 
+  r = RegExp(id).test(tokens[0].token)  ? [{type: 'identifier', value: tokens[0].token}, tokens.slice(1)] : null
+  else if (tokens[0])
+  r = id === tokens[0].token ? [{type: 'identifier', value: tokens[0].token}, tokens.slice(1)] : null
+  // console.log('match token: \t'+ id +  '\t   ---   \t'+tokens.join(' '))
   if (r) return r
   // 如果出现语法错误，以剩下 tokens 最少的为最优 parser 结果，并报错
-  if (tokens.length <= errManager.resttokens.length) {
-    errManager.resttokens = tokens
-    errManager.errorInfo = `syntax error on '${tokens[0] === undefined ? 'empty string' : tokens[0]}';
-    ${errManager.resttokens.slice(0, 20).map(i => i === '(' || i === ')' ? i : ' ' + i + ' ').join('')} expected an '${id}'.`
+  if (tokens.length <= errManager.restTokens.length) {
+    const index = errManager.restTokens[0].strIndex
+    const input = errManager.restTokens[0].input
+    const token = errManager.restTokens[0].token
+    errManager.restTokens = tokens
+    errManager.errorInfo = `syntax error on '${tokens[0] === undefined ? 'empty string' : tokens[0].token}'.\n'${input.slice(0, index) + ' ' + token}' expected an '${id}'.`
   }
   return r
 }
@@ -66,20 +72,30 @@ const REP = (parser, max = -1) => tokens => {
   return [result, rest]
 }
 
-const NUM = tokens => /\d/g.test(tokens[0]) ? [{type: 'number', value: Number(tokens[0])}, tokens.slice(1)] : null
+const NUM = tokens => {
+  const r = ID(/\d/g, true)(tokens)
+  if (r) {
+    r[0].type = 'number'
+    r[0].value = Number(r[0].value)
+  }
+  return r
+}
 const BOOL = tokens => {
   const t = ID('#t')(tokens)
   const f = ID('#f')(tokens)
   return t ? [{type: 'bool', value: true}, t[1]] : f ? [{type: 'bool', value: false}, f[1]] : null
 }
 const STR = tokens => {
-  const r = /^"(.*)"$/g.exec(tokens[0])
-  if (r) return [{type: 'string', value: r[1]}, tokens.slice(1)]
+  const r = ID(/^"(.*)"$/g, true)(tokens)
+  if (r) return r[0].type = 'string'
   return null
 }
 // lisp 语法定义, 参考 R5RS
 // <EXP> -> <VAR> | <LITERAL> | PRODCALL | LAMBDA | LET
-const EXP = tokens => OR(VAR, LITERAL, PRODCALL, LAMBDA, LET)(tokens)
+const EXP = tokens => {
+  if (tokens.length == 0) return null
+  return OR(VAR, LITERAL, PRODCALL, LAMBDA, LET)(tokens)
+}
 
 // <SELFEVAL> -> <BOOL> | <STR> | <NUM>
 const SELFEVAL = tokens => {
@@ -97,7 +113,7 @@ const SYNTAXKEYWORD = tokens => {
 const VAR = tokens => { 
   const OPERATOR = OR(ID('+'), ID('-'), ID('*'), ID('/'))
   const NOTSYNTAXKEYWORD = tokens => {
-    if (!SYNTAXKEYWORD(tokens)&&!SELFEVAL(tokens)&&!!tokens[0]) {
+    if (!SYNTAXKEYWORD(tokens)&&!SELFEVAL(tokens)&&!!tokens[0].token) {
       return Successed(tokens)
     }
     return null

@@ -11,17 +11,23 @@ function tokenizer(str) {
   const regex = /[\s,]*(~@|[\[\]{}()'`~^@]|"(?:\\.|[^\\"])*"|;.*|[^\s\[\]{}('"`,;)]*)/g
   // 使用带有 /g 参数的正则表达式时，可对同一个字符串多次调用 exec 方法，
   // 每次调用都会更新 lastIndex (下一次匹配开始的位置)
-  while ((match = regex.exec(str)[1]) != '') {
+  let i = 0
+  while ((match = regex.exec(str))[1] != '') {
     // 注释忽略不处理
     if (match[0] === ';') continue
-    tokens.push(match)
+    tokens.push({
+      token: match[1],
+      arrIndex: i++,
+      strIndex: match.index,
+      input: match.input
+    })
   }
   return tokens
 }
 
 function parser(tokens) {
   const errManager = {
-    resttokens: tokens,
+    restTokens: tokens,
     errorInfo: ''
   }
   const { ast, err } = program(tokens, errManager)
