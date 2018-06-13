@@ -20,7 +20,13 @@ function tokenizer(str) {
 }
 
 function parser(tokens) {
-    return program(tokens)
+  const errManager = {
+    resttokens: tokens,
+    errorInfo: ''
+  }
+  const { ast, err } = program(tokens, errManager)
+  if (ast) return ast
+  throw err.errorInfo
 }
 
 module.exports = { tokenizer, parser }

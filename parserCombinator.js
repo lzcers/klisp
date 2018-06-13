@@ -1,3 +1,8 @@
+let errManager = {
+  resttokens: -1,
+  errorInfo: ''
+}
+// (let ((y 2)) ((lambda (x) (+ x y)) 1))
 const keyword = new Set(['def', 'if', 'lambda'])
 // 首先定义 Parser, 它是一个接受 tokens 返回 Result 的函数
 // Parser := Tokens => Result | null
@@ -9,7 +14,17 @@ const keyword = new Set(['def', 'if', 'lambda'])
 const Successed = tokens => [{type: 'any', value: tokens[0]}, tokens.slice(1)]
 
 // 一个高阶函数，用于创建标识符解析器， 比如说 Ｇ　-> s 解析 s 终结符
-const ID = id => tokens => tokens[0] === id ? [{type: 'identifier', value: tokens[0]}, tokens.slice(1)] : null
+const ID = id => tokens => {
+  const r = tokens[0] === id ? [{type: 'identifier', value: tokens[0]}, tokens.slice(1)] : null
+  if (r) return r
+  // 如果出现语法错误，以剩下 tokens 最少的为最优 parser 结果，并报错
+  if (tokens.length <= errManager.resttokens.length) {
+    errManager.resttokens = tokens
+    errManager.errorInfo = `syntax error on '${tokens[0] === undefined ? 'empty string' : tokens[0]}';
+    ${errManager.resttokens.slice(0, 20).map(i => i === '(' || i === ')' ? i : ' ' + i + ' ').join('')} expected an '${id}'.`
+  }
+  return r
+}
 
 // 只要有一个解析器解析成功就是解析成功, 相当文法中的 | 符号，比如 G -> A | B | C
 const OR = (...parsers) => tokens => {
@@ -82,7 +97,7 @@ const SYNTAXKEYWORD = tokens => {
 const VAR = tokens => { 
   const OPERATOR = OR(ID('+'), ID('-'), ID('*'), ID('/'))
   const NOTSYNTAXKEYWORD = tokens => {
-    if (!SYNTAXKEYWORD(tokens)&&!SELFEVAL(tokens)) {
+    if (!SYNTAXKEYWORD(tokens)&&!SELFEVAL(tokens)&&!!tokens[0]) {
       return Successed(tokens)
     }
     return null
@@ -148,4 +163,11 @@ const COMMANDORDEF = tokens => OR(COMMAND, DEFINE)(tokens)
 // <PROGRAM> -> <command or definition>*
 const PROGRAM = tokens => REP(COMMANDORDEF)(tokens)
 
-module.exports = EXP
+function program(tokens, err) {
+  errManager = { ...err }
+  return {
+    ast: EXP(tokens),
+    err: errManager
+  }
+}
+module.exports = program
