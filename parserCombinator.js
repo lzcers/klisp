@@ -94,7 +94,7 @@ const STR = tokens => {
 // <EXP> -> <VAR> | <LITERAL> | PRODCALL | LAMBDA | LET
 const EXP = tokens => {
   if (tokens.length == 0) return null
-  return OR(VAR, LITERAL, PRODCALL, LAMBDA, LET)(tokens)
+    return OR(VAR, LITERAL, PRODCALL, LAMBDA, LET)(tokens)
 }
 
 // <SELFEVAL> -> <BOOL> | <STR> | <NUM>
@@ -186,4 +186,5 @@ function program(tokens, err) {
     err: errManager
   }
 }
+
 module.exports = program

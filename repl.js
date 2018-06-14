@@ -1,5 +1,5 @@
 const readline = require('readline')
-const { tokenizer, parser } = require('./parser.js')
+const { Reader, Parser } = require('./parser.js')
 const evalApply = require('./evalApply.js')
 
 const rl = readline.createInterface({
@@ -11,8 +11,8 @@ const rl = readline.createInterface({
 rl.prompt()
 
 function read(str) {
-  const tokens = tokenizer(str)
-  const ast = parser(tokens)
+  const reader = new Reader(str)
+  const ast = Parser(reader)
   return ast[0]
 }
 
