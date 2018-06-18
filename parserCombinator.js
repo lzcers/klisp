@@ -19,7 +19,7 @@ const ID = (id, regex = false) => tokens => {
   r = RegExp(id).test(tokens[0].token)  ? [{type: 'identifier', value: tokens[0].token}, tokens.slice(1)] : null
   else if (tokens[0])
   r = id === tokens[0].token ? [{type: 'identifier', value: tokens[0].token}, tokens.slice(1)] : null
-  // console.log('match token: \t'+ id +  '\t   ---   \t'+tokens.join(' '))
+  console.log('match token: \t'+ id +  '\t   ---   \t'+tokens.join(' '))
   if (r) return r
   // 如果出现语法错误，以剩下 tokens 最少的为最优 parser 结果，并报错
   if (tokens.length <= errManager.restTokens.length) {
